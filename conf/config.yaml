@@ -1,0 +1,17 @@
+defaults:
+  - dataset: ABCD
+  - model: matt # brainnetcnn, fbnetgen, egt, bnt, transformer, braingnn
+  - optimizer: adam
+  - training: basic_training
+  - datasz: 10p
+  - preprocess: non_mixup
+
+repeat_time: 1
+log_path: result
+save_learnable_graph: False
+group_attr: None
+
+# wandb
+wandb_entity: eggroup
+project: hyperbolic_mixup # EGT, mixup
+logging: True

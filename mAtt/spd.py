@@ -11,7 +11,7 @@ class SPDTransform(nn.Module):
 
     def __init__(self, input_size, output_size):
         super(SPDTransform, self).__init__()
-        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        self.device = torch.device('cuda')
         self.increase_dim = None
         if output_size > input_size:
             self.increase_dim = SPDIncreaseDim(input_size, output_size)
@@ -34,7 +34,7 @@ class SPDIncreaseDim(nn.Module):
 
     def __init__(self, input_size, output_size):
         super(SPDIncreaseDim, self).__init__()
-        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        self.device = torch.device('cuda')
         self.register_buffer('eye', torch.eye(output_size, input_size).to(self.device))
         add = torch.as_tensor([0] * input_size + [1] * (output_size-input_size), dtype=torch.float32)
         add = add.to(self.device)
@@ -54,7 +54,7 @@ class ParametricVectorize(nn.Module):
 
     def __init__(self, input_size, output_size):
         super(ParametricVectorize, self).__init__()
-        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        self.device = torch.device('cuda')
         self.weight = nn.Parameter(torch.ones(output_size, input_size), requires_grad=True)
         self.weight.to(self.device)
     def forward(self, input):
@@ -70,7 +70,7 @@ class SPDVectorize(nn.Module):
 
     def __init__(self, input_size):
         super(SPDVectorize, self).__init__()
-        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        self.device = torch.device('cuda')
         row_idx, col_idx = torch.triu_indices(input_size, input_size)
         self.register_buffer('row_idx', torch.LongTensor(row_idx).to(self.device))
         self.register_buffer('col_idx', torch.LongTensor(col_idx).to(self.device))
@@ -301,7 +301,7 @@ class SPDRectified(nn.Module):
 
     def __init__(self, epsilon=1e-4):
         super(SPDRectified, self).__init__()
-        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        self.device = torch.device('cuda')
         self.register_buffer('epsilon', torch.FloatTensor([epsilon]).to(self.device))
 
     def forward(self, input):
@@ -373,7 +373,7 @@ class SPDPower(nn.Module):
 
     def __init__(self, input_dim):
         super(SPDPower, self).__init__()
-        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        self.device = torch.device('cuda')
         self.weight = nn.Parameter(torch.ones(input_dim).to(self.device), requires_grad=True)
 
     def forward(self, input):

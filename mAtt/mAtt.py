@@ -6,7 +6,7 @@ class signal2spd(nn.Module):
     # convert signal epoch to SPD matrix
     def __init__(self):
         super().__init__()
-        self.dev = torch.device('cpu')
+        self.dev = torch.device('cuda')
     def forward(self, x):
         
         x = x.squeeze()
@@ -20,6 +20,8 @@ class signal2spd(nn.Module):
         cov /= tra
         identity = torch.eye(cov.shape[-1], cov.shape[-1], device=self.dev).to(self.dev).repeat(x.shape[0], 1, 1)
         cov = cov+(1e-5*identity)
+        if(torch.isnan(cov).any()):
+            print("yes")
         return cov 
 
 class E2R(nn.Module):
@@ -56,18 +58,25 @@ class AttentionManifold(nn.Module):
         
         self.d_in = in_embed_size
         self.d_out = out_embed_size
-        self.q_trans = SPDTransform(self.d_in, self.d_out).cpu()
-        self.k_trans = SPDTransform(self.d_in, self.d_out).cpu()
-        self.v_trans = SPDTransform(self.d_in, self.d_out).cpu()
+        self.device = torch.device('cuda')
+        self.q_trans = SPDTransform(self.d_in, self.d_out).cuda()
+        self.k_trans = SPDTransform(self.d_in, self.d_out).cuda()
+        self.v_trans = SPDTransform(self.d_in, self.d_out).cuda()
 
     def tensor_log(self, t):#4dim
+        #u, s = torch.svd(t)
+        #s, u = torch.linalg.eigh(t)
         u, s, v = torch.svd(t)
+        s = s + 1e-6
         return u @ torch.diag_embed(torch.log(s)) @ v.permute(0, 1, 3, 2)
         
     def tensor_exp(self, t):#4dim
         # condition: t is symmetric!
         s, u = torch.linalg.eigh(t)
-        return u @ torch.diag_embed(torch.exp(s)) @ u.permute(0, 1, 3, 2)
+        r = u @ torch.diag_embed(torch.exp(s)) @ u.permute(0, 1, 3, 2)
+        if(torch.isnan(r).any()):
+            print("yes")
+        return r
     def log_euclidean_distance(self, A, B):
         inner_term = self.tensor_log(A) - self.tensor_log(B)
         inner_multi = inner_term @ inner_term.permute(0, 1, 3, 2)
@@ -89,6 +98,8 @@ class AttentionManifold(nn.Module):
     def forward(self, x, shape=None):
         if len(x.shape)==3 and shape is not None:
             x = x.view(shape[0], shape[1], self.d_in, self.d_in)
+        if(torch.isnan(x).any()):
+            print("yes")
         x = x.to(torch.float)# patch:[b, #patch, c, c]
         q_list = []; k_list = []; v_list = []  
         # calculate Q K V
@@ -120,33 +131,45 @@ class AttentionManifold(nn.Module):
         return output, shape
 
 class mAtt_bci(nn.Module):
-    def __init__(self, epochs):
+    def __init__(self, epochs, config):
         super().__init__()
+        epochs = 1
         #FE
         # bs, 1, channel, sample
-        self.conv1 = nn.Conv2d(1, 22, (22, 1))
-        self.Bn1 = nn.BatchNorm2d(22)
+        self.conv1 = nn.Conv2d(1, config.model.node_width, (config.model.node_width, 1))
+        self.Bn1 = nn.BatchNorm2d(config.model.node_width)
         # bs, 22, 1, sample
-        self.conv2 = nn.Conv2d(22, 20, (1, 12), padding=(0, 6))
-        self.Bn2   = nn.BatchNorm2d(20)
+        self.conv2 = nn.Conv2d(config.model.node_width, config.model.node_width // 2,
+         (1, 12), padding=(0, 6))
+        self.Bn2   = nn.BatchNorm2d(config.model.node_width // 2)
         
         # E2R
         self.ract1 = E2R(epochs=epochs)
         # riemannian part
-        self.att2 = AttentionManifold(20, 18)
+        self.att2 = AttentionManifold(config.model.node_width // 2, config.model.node_width // 4)
         self.ract2  = SPDRectified()
         
         # R2E
-        self.tangent = SPDTangentSpace(18)
+        self.tangent = SPDTangentSpace(config.model.node_width // 4)
         self.flat = nn.Flatten()
         # fc
-        self.linear = nn.Linear(9*19*epochs, 4, bias=True)
+        self.linear = nn.Linear(4095 * epochs, 2, bias=True)
 
     def forward(self, x):
+        if(torch.isnan(x).any()):
+            print("yes")
         x = self.conv1(x)
+        if(torch.isnan(x).any()):
+            print("yes")
         x = self.Bn1(x)
+        if(torch.isnan(x).any()):
+            print("yes")
         x = self.conv2(x)
+        if(torch.isnan(x).any()):
+            print("yes")
         x = self.Bn2(x)
+        if(torch.isnan(x).any()):
+            print("yes")
         
         x = self.ract1(x)
         x, shape = self.att2(x)

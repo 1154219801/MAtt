@@ -1,0 +1,3 @@
+name: discrete_mixup
+continus: False
+discrete: True

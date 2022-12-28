@@ -14,19 +14,22 @@ def trainNetwork(net, trainloader, validloader, testloader, model_path=None, ite
     optimizer = MixOptimizer(optimizer)
     bestLoss = 1e10
     val_len = len(validloader)
-    
     for ite in range(iterations):
         net.train()
         acc_val = 0
         acc_tr = 0
         tr_len = 0
         for xb, yb in trainloader:
+            xb,yb = xb.cuda(), yb.cuda()
+            if(torch.isnan(xb).any()):
+                pass
             tr_len += yb.shape[0]
             out = net(xb)
             loss = CE(out, yb)
 
             optimizer.zero_grad()
-            loss.backward()
+            with torch.autograd.detect_anomaly():
+                loss.backward()
             optimizer.step()
             acc_tr += (torch.max(out, 1).indices==yb).sum().item()
         
@@ -34,6 +37,7 @@ def trainNetwork(net, trainloader, validloader, testloader, model_path=None, ite
         TL = 0
         for xb, yb in validloader:
             with torch.no_grad():
+                xb,yb = xb.cuda(), yb.cuda()
                 out = net(xb)
                 if torch.argmax(softmax(out)) == yb:
                     acc_val += 1
@@ -55,6 +59,8 @@ def trainNetwork(net, trainloader, validloader, testloader, model_path=None, ite
             testnet = torch.load(final_path)
             test_acc = testNetwork(testnet, testloader)
             print(f'test_acc:{test_acc}')
+            test_auc = testNetwork_auc(testnet, testloader)
+            print(f'test_auc:{test_auc}')
     net = torch.load(os.path.join(model_path, f'repeat{repeat}_sub{sub}_epochs{epochs}_lr{lr}_wd{wd}.pt'))
     return net  
 
@@ -63,6 +69,7 @@ def testNetwork(net, testloader):
     acc = 0
     softmax = nn.Softmax(dim=1)
     for xb, yb in testloader:
+        xb,yb = xb.cuda(), yb.cuda()
         with torch.no_grad():
             pred = net(xb)
             if torch.argmax(softmax(pred)) == yb:
@@ -74,14 +81,16 @@ def testNetwork_auc(net, testloader):
     net.eval()
     acc = 0
     softmax = nn.Softmax(dim=1)
-    y_pred = torch.empty(0)
-    y_true = torch.empty(0)
+    y_pred = torch.empty(0).cuda()
+    y_true = torch.empty(0).cuda()
     for xb, yb in testloader:
+        xb, yb = xb.cuda(), yb.cuda()
         with torch.no_grad():
             pred = net(xb)
             y_pred = torch.cat((y_pred, pred[:, 1]), 0)
             y_true = torch.cat((y_true, yb), 0)
-            
+    y_true = y_true.to('cpu')
+    y_pred = y_pred.to('cpu')
     return ras(y_true.detach().numpy(), y_pred.detach().numpy())
 
 

@@ -1,0 +1,4 @@
+name: continus_mixup
+continus: True
+discrete: False
+graphon: False

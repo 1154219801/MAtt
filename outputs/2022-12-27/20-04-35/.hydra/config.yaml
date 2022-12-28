@@ -1,0 +1,53 @@
+dataset:
+  name: abcd
+  batch_size: 1
+  test_batch_size: 16
+  val_batch_size: 16
+  train_set: 0.7
+  val_set: 0.1
+  node_feature: /home/achengu/ABCD/abcd_rest-pearson-HCP2016.npy
+  time_seires: /home/achengu/ABCD/abcd_rest-timeseires-HCP2016.npy
+  node_id: /home/achengu/ABCD/ids_HCP2016.txt
+  seires_id: /home/achengu/ABCD/ids_HCP2016_timeseires.txt
+  label: /home/achengu/ABCD/id2sex.txt
+  drop_last: true
+  stratified: false
+model:
+  name: mAtt
+  node_width: 360
+optimizer:
+- name: Adam
+  lr: 0.0001
+  match_rule: None
+  except_rule: None
+  no_weight_decay: false
+  weight_decay: 0.0001
+  lr_scheduler:
+    mode: cos
+    base_lr: 0.0001
+    target_lr: 1.0e-05
+    decay_factor: 0.1
+    milestones:
+    - 0.3
+    - 0.6
+    - 0.9
+    poly_power: 2.0
+    lr_decay: 0.98
+    warm_up_from: 0.0
+    warm_up_steps: 0
+training:
+  name: Train
+  epochs: 200
+datasz:
+  percentage: 0.1
+preprocess:
+  name: non_mixup
+  continus: false
+  discrete: false
+repeat_time: 1
+log_path: result
+save_learnable_graph: false
+group_attr: None
+wandb_entity: eggroup
+project: hyperbolic_mixup
+logging: true

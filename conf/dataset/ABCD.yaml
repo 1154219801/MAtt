@@ -1,0 +1,13 @@
+name: abcd
+batch_size: 1
+test_batch_size: 16
+val_batch_size: 16
+train_set: 0.7
+val_set: 0.1
+node_feature: /home/achengu/ABCD/abcd_rest-pearson-HCP2016.npy
+time_seires: /home/achengu/ABCD/abcd_rest-timeseires-HCP2016.npy
+node_id: /home/achengu/ABCD/ids_HCP2016.txt
+seires_id: /home/achengu/ABCD/ids_HCP2016_timeseires.txt
+label: /home/achengu/ABCD/id2sex.txt
+drop_last: True
+stratified: False
