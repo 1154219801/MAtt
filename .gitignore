@@ -3,3 +3,4 @@ data/
 *.pt
 *.sh
 *.log
+outputs/
